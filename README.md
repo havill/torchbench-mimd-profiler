@@ -1,7 +1,8 @@
-MIMD Hardware Profiling Suite for TorchBench
+# MIMD Hardware Profiling Suite for TorchBench
+
 This suite provides a unified hardware profiling tool for evaluating PyTorch models on diverse backends (CPU, CUDA, MPS, etc.). It measures Latency, Throughput, Workload (TeraFLOPs), and Power Consumption (Watts), exporting the final results to a timestamped CSV.
 
-🛠️ Environment Setup
+## 🛠️ Environment Setup
 Tested on:
 - Windows 11 16GB RAM with an NVIDIA RTX 3070 Super
 - Windows 11 64GB RAM with an NVIDIA RTX 4070 Super
@@ -39,7 +40,7 @@ pip install nvidia-ml-py  # For GPU Power monitoring
 pip install fvcore        # For FLOP counting
 ```
 
-🚀 Running the Benchmarks
+## 🚀 Running the Benchmarks
 The script supports dynamic device selection via the -d flag.
 - `-d cpu`: No special hardware libs used
 - `-d cuda`: NVIDIA
@@ -59,7 +60,7 @@ Runs the suite on the host processor (Power telemetry is automatically disabled)
 python mimd_benchmarks.py -d cpu
 ```
 
-📊 Output
+## 📊 Output
 Upon completion, the script generates a timestamped CSV file:
 hardware_profiling_[device]_[timestamp].csv
 
@@ -72,7 +73,7 @@ Tracked Metrics:
 | Avg Power | Sustained power draw in Watts (NVIDIA only). |
 | Efficiency | Mathematical "Bang for your Buck" (GFLOPs per Watt). |
 
-⚠️ Troubleshooting Notes
+## ⚠️ Troubleshooting Notes
 Tacotron2 / Speech Transformer: These models were excluded from the final suite due to complex Linux-specific dependencies (kaldiio, train_chars.txt) that are unstable on Windows.
 
 AssertionErrors: If you see "unknown args" errors, ensure you are not passing unsupported flags like --flops or -b to the base run.py as these are now handled natively by the Python wrapper.
