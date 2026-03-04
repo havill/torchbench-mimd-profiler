@@ -14,6 +14,8 @@ First, ensure you have a clean Python 3.10+ environment and the latest build too
 python -m pip install --upgrade pip setuptools wheel
 pip install pywin32 pandas pyyaml ninja psutil
 ```
+(pywin32 only needed for Windows)
+
 2. PyTorch Installation (CUDA 12.6+)
 We used the CUDA 12.6 nightly/stable builds to ensure compatibility with modern hardware:
 
