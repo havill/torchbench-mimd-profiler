@@ -41,10 +41,10 @@ pip install fvcore        # For FLOP counting
 
 🚀 Running the Benchmarks
 The script supports dynamic device selection via the -d flag.
-- 'cpu': No special hardware libs used
-- 'cuda': NVIDIA
-- 'mps': Mac
-- 'xpu': Intel
+- `-d cpu`: No special hardware libs used
+- `-d cuda`: NVIDIA
+- `-d mps`: Mac
+- `-d xpu`: Intel
 
 GPU Benchmarking (Full Telemetry)
 Includes Power (Watts) and Energy Efficiency (GFLOPs/W) metrics:
