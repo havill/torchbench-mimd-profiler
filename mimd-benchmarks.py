@@ -14,8 +14,16 @@ try:
 except ImportError:
     HAS_FLOP_COUNTER = False
 
-# The "Mount Rushmore" of MIMD/SIMD benchmarks
-MIMD_MODELS = ["dlrm", "soft_actor_critic", "BERT_pytorch", "llama"]
+# Selected models that stress MIMD features (branching, sparse access, task parallelism)
+MIMD_MODELS = [
+    "dlrm",                 # Sparse + Dense hybrid (high memory-bandwidth & irregular access)
+    "soft_actor_critic",    # RL: Irregular control flow and actor-critic logic
+#    "drq",                  # RL: Data-regularized Q-learning
+    "BERT_pytorch",         # NLP: Instruction-level branching in attention mechanisms
+    "llama",                # LLM: Complex decoding logic and inference-heavy branching
+#    "speech_transformer",   # Audio: Variable length sequences / complex dependencies
+#    "tacotron2",            # Sequential/Recurrent dependencies
+]
 
 # Safe import for NVML (only strictly needed if using CUDA)
 try:
@@ -211,4 +219,5 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     
+
     run_unified_stats(args.device)
