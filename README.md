@@ -4,8 +4,14 @@ This suite provides a unified hardware profiling tool for evaluating PyTorch mod
 
 ## 🛠️ Environment Setup
 Tested on:
-- Windows 11 16GB RAM with an NVIDIA RTX 3070 Super
-- Windows 11 64GB RAM with an NVIDIA RTX 4070 Super
+- 11th Gen Intel i7-1165G7 @ 2.80Ghz / 16GB RAM
+  - Windows 11
+    - Python 3.13.1
+  - Fedora 42 (remix for WSL 2)
+    - Python 3.13.12
+- NVIDIA RTX 3060
+  - Driver Version: 566.36
+    - CUDA Version: 12.7
 
 1. Core Prerequisites
 First, ensure you have a clean Python 3.10+ environment and the latest build tools:
