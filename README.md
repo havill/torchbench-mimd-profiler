@@ -71,7 +71,7 @@ Runs the suite on the host processor (Power telemetry is automatically disabled)
 ```powershell
 python mimd_benchmarks.py -d cpu
 ```
-> [!NOTE]
+> [!IMPORTANT]
 > The python script needs to be run in the same directory as the "torchbenchmark" directory, and that directory should contain the "models" and the "canary_models" directories inside of it.
 
 ## 📊 Output
