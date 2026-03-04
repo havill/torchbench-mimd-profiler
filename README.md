@@ -14,7 +14,8 @@ First, ensure you have a clean Python 3.10+ environment and the latest build too
 python -m pip install --upgrade pip setuptools wheel
 pip install pywin32 pandas pyyaml ninja psutil
 ```
-(pywin32 only needed for Windows)
+> [!NOTE]
+> pywin32 only needed for Windows
 
 2. PyTorch Installation (CUDA 12.6+)
 We used the CUDA 12.6 nightly/stable builds to ensure compatibility with modern hardware:
@@ -26,6 +27,9 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 Clone the torchbenchmark repository, install the core requirements, and install the benchmark in editable mode:
 
 ```powershell
+gh repo clone pytorch/benchmark # assuming the GitHub CLI
+cd benchmark
+
 # From the root of the benchmark directory
 pip install -r requirements.txt
 pip install -e .
