@@ -1,4 +1,41 @@
+import sys
 import os
+from pathlib import Path
+
+def setup_paths():
+    # 1. Check where the script is sitting
+    script_dir = Path(__file__).resolve().parent
+    
+    # 2. Check where YOU are standing (Current Working Directory)
+    cwd = Path.cwd()
+
+    # We are looking for the folder that CONTAINS the 'torchbenchmark' subfolder
+    potential_roots = [script_dir, cwd, script_dir.parent]
+    
+    found_root = None
+    for path in potential_roots:
+        if (path / "torchbenchmark").exists():
+            found_root = path
+            break
+            
+    if not found_root:
+        print("❌ Error: Could not find the 'torchbenchmark' directory.")
+        print("Please run this script from inside the benchmark folder,")
+        print("or keep the script inside the benchmark folder.")
+        sys.exit(1)
+
+    # Inject the discovered root
+    root_str = str(found_root)
+    if root_str not in sys.path:
+        sys.path.insert(0, root_str)
+    
+    # Move the "Current Directory" to the root so models find their /data folders
+    os.chdir(root_str)
+    return root_str
+
+BENCHMARK_ROOT = setup_paths()
+print(f"🏠 Anchored to: {BENCHMARK_ROOT}")
+
 import time
 import threading
 import importlib
