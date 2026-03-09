@@ -42,8 +42,6 @@ def setup_paths(manual_path=None):
     print(f"🏠 Auto-anchored to: {root_str}")
     return root_str
 
-print(f"🏠 Anchored to: {BENCHMARK_ROOT}")
-
 import time
 import threading
 import importlib
