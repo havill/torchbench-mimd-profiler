@@ -1,0 +1,79 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import os
+
+def generate_charts(csv_file="master_benchmark_results.csv"):
+    print(f"--- 📊 Generating Charts from {csv_file} ---")
+    
+    if not os.path.exists(csv_file):
+        print(f"❌ Error: Could not find {csv_file}. Run the merge script first.")
+        return
+
+    # 1. Load the data
+    df = pd.read_csv(csv_file)
+
+    # 2. Clean the data (Drop failed runs and convert string numbers to floats)
+    df = df[df['Status'] == 'Passed'].copy()
+    
+    numeric_cols = ['Throughput_passes_per_sec', 'Latency_ms', 'Efficiency_GFLOPs_per_W']
+    for col in numeric_cols:
+        # Force conversion to numeric, turning "N/A" into NaN, then fill with 0
+        df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+
+    # Convert Batch_Size to string so it graphs nicely as a categorical label
+    df['Batch_Size'] = df['Batch_Size'].astype(str)
+
+    # Set the visual style
+    sns.set_theme(style="whitegrid")
+
+    # ==========================================
+    # CHART 1: Throughput (CPU vs CUDA)
+    # ==========================================
+    print("📈 Generating Throughput Comparison Chart...")
+    plt.figure(figsize=(12, 6))
+    
+    # We use a catplot to group by Model, then Batch Size, then color by Backend
+    chart1 = sns.catplot(
+        data=df, kind="bar",
+        x="Batch_Size", y="Throughput_passes_per_sec", hue="Backend", col="Model",
+        height=5, aspect=0.8, palette="muted", sharey=False
+    )
+    chart1.set_axis_labels("Batch Size", "Throughput (Passes / Sec)")
+    chart1.fig.suptitle("Hardware Throughput by Model and Batch Size", y=1.05)
+    
+    out_file1 = "chart_throughput_comparison.png"
+    chart1.savefig(out_file1, dpi=300, bbox_inches="tight")
+    print(f"   ✅ Saved: {out_file1}")
+
+    # ==========================================
+    # CHART 2: Energy Efficiency (CUDA Only)
+    # ==========================================
+    print("🔋 Generating Energy Efficiency Chart...")
+    
+    # Filter for only CUDA runs where efficiency was actually calculated (>0)
+    cuda_df = df[(df['Backend'] == 'cuda') & (df['Efficiency_GFLOPs_per_W'] > 0)]
+    
+    if not cuda_df.empty:
+        plt.figure(figsize=(10, 6))
+        chart2 = sns.barplot(
+            data=cuda_df, 
+            x="Model", y="Efficiency_GFLOPs_per_W", hue="Batch_Size", 
+            palette="viridis"
+        )
+        plt.title("RTX 3070 Super: Energy Efficiency Scaling", fontsize=14)
+        plt.ylabel("Efficiency (GFLOPs / Watt)", fontsize=12)
+        plt.xlabel("Model", fontsize=12)
+        plt.legend(title='Batch Size')
+        plt.tight_layout()
+        
+        out_file2 = "chart_energy_efficiency.png"
+        plt.savefig(out_file2, dpi=300)
+        print(f"   ✅ Saved: {out_file2}")
+    else:
+        print("   ⚠️ Skipped Energy chart (No valid CUDA power data found).")
+
+    print("\n🎉 All charts generated successfully!")
+
+if __name__ == "__main__":
+    generate_charts()
