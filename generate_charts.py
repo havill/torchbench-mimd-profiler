@@ -2,12 +2,17 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
+import argparse
 
 def generate_charts(csv_file="master_benchmark_results.csv"):
+    # Resolve the absolute path so we know exactly where to save the images
+    csv_file = os.path.abspath(csv_file)
+    out_dir = os.path.dirname(csv_file)
+    
     print(f"--- 📊 Generating Charts from {csv_file} ---")
     
     if not os.path.exists(csv_file):
-        print(f"❌ Error: Could not find {csv_file}. Run the merge script first.")
+        print(f"❌ Error: Could not find {csv_file}. Run the merge script first or specify the correct path with -f.")
         return
 
     # 1. Load the data
@@ -33,7 +38,6 @@ def generate_charts(csv_file="master_benchmark_results.csv"):
     print("📈 Generating Throughput Comparison Chart...")
     plt.figure(figsize=(12, 6))
     
-    # We use a catplot to group by Model, then Batch Size, then color by Backend
     chart1 = sns.catplot(
         data=df, kind="bar",
         x="Batch_Size", y="Throughput_passes_per_sec", hue="Backend", col="Model",
@@ -42,7 +46,8 @@ def generate_charts(csv_file="master_benchmark_results.csv"):
     chart1.set_axis_labels("Batch Size", "Throughput (Passes / Sec)")
     chart1.fig.suptitle("Hardware Throughput by Model and Batch Size", y=1.05)
     
-    out_file1 = "chart_throughput_comparison.png"
+    # Save the chart in the same directory as the CSV
+    out_file1 = os.path.join(out_dir, "chart_throughput_comparison.png")
     chart1.savefig(out_file1, dpi=300, bbox_inches="tight")
     print(f"   ✅ Saved: {out_file1}")
 
@@ -51,7 +56,6 @@ def generate_charts(csv_file="master_benchmark_results.csv"):
     # ==========================================
     print("🔋 Generating Energy Efficiency Chart...")
     
-    # Filter for only CUDA runs where efficiency was actually calculated (>0)
     cuda_df = df[(df['Backend'] == 'cuda') & (df['Efficiency_GFLOPs_per_W'] > 0)]
     
     if not cuda_df.empty:
@@ -61,13 +65,14 @@ def generate_charts(csv_file="master_benchmark_results.csv"):
             x="Model", y="Efficiency_GFLOPs_per_W", hue="Batch_Size", 
             palette="viridis"
         )
-        plt.title("RTX 3070 Super: Energy Efficiency Scaling", fontsize=14)
+        plt.title("Hardware Energy Efficiency Scaling", fontsize=14)
         plt.ylabel("Efficiency (GFLOPs / Watt)", fontsize=12)
         plt.xlabel("Model", fontsize=12)
         plt.legend(title='Batch Size')
         plt.tight_layout()
         
-        out_file2 = "chart_energy_efficiency.png"
+        # Save the chart in the same directory as the CSV
+        out_file2 = os.path.join(out_dir, "chart_energy_efficiency.png")
         plt.savefig(out_file2, dpi=300)
         print(f"   ✅ Saved: {out_file2}")
     else:
@@ -76,4 +81,13 @@ def generate_charts(csv_file="master_benchmark_results.csv"):
     print("\n🎉 All charts generated successfully!")
 
 if __name__ == "__main__":
-    generate_charts()
+    parser = argparse.ArgumentParser(description="Generate charts from a master benchmark CSV.")
+    parser.add_argument(
+        "-f", "--file", 
+        type=str, 
+        default="master_benchmark_results.csv", 
+        help="Path to the master CSV file (defaults to 'master_benchmark_results.csv' in current dir)."
+    )
+    args = parser.parse_args()
+    
+    generate_charts(args.file)
