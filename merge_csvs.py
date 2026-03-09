@@ -40,6 +40,8 @@ def merge_results(target_dir="."):
                 
                 # Write the header ONLY for the very first file
                 if index == 0:
+
+                    
                     writer.writerow(headers)
                     
                 # Append all the actual data rows
@@ -61,3 +63,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     merge_results(args.dir)
+
+
