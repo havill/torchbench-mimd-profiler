@@ -117,17 +117,24 @@ def sync_device(device):
     # CPUs run synchronously by default in PyTorch, so they don't need a sync call
 
 
-def run_unified_stats(device):
-    print(f"--- Running MIMD Suite on {device.upper()} (Hardware Profiling + CSV Export) ---")
+def run_unified_stats(device, batch_size=None, burn_duration=2.0):
+    print(f"--- Running MIMD Suite on {device.upper()} ---")
+    print(f"--- Burn Duration: {burn_duration}s | Batch Size: {batch_size or 'Default'} ---")
     
     csv_data = []
 
     for model_name in MIMD_MODELS:
         print(f"\n[ANALYZING]: {model_name}...", flush=True)
         
+        # Define 'monitor' BEFORE the try block so it always exists, 
+        # even if the model crashes immediately.
+        monitor = None
+        
         row = {
             "Model": model_name,
             "Backend": device,
+            "Batch_Size": batch_size if batch_size else "Default",
+            "Burn_Time_s": burn_duration,
             "Status": "Failed",
             "Latency_ms": "N/A",
             "Throughput_passes_per_sec": "N/A",
@@ -139,9 +146,13 @@ def run_unified_stats(device):
         }
         
         try:
-            # 1. Initialize the TorchBench model on the requested device
+            # 1. Initialize the TorchBench model
             module = importlib.import_module(f"torchbenchmark.models.{model_name}")
-            model_obj = module.Model(device=device, test="eval")
+            kwargs = {"device": device, "test": "eval"}
+            if batch_size is not None:
+                kwargs["batch_size"] = batch_size
+            
+            model_obj = module.Model(**kwargs)
             
             with torch.no_grad():
                 # 2. Measure Workload (FLOPs)
@@ -158,7 +169,6 @@ def run_unified_stats(device):
                     model_obj.invoke()
                 sync_device(device)
                 
-                # Use CUDA Events for NVIDIA, and Python Perf Counter for CPU/MPS/XPU
                 if device == "cuda":
                     start_event = torch.cuda.Event(enable_timing=True)
                     end_event = torch.cuda.Event(enable_timing=True)
@@ -175,14 +185,14 @@ def run_unified_stats(device):
                     avg_latency_ms = ((t1 - t0) * 1000.0) / 10.0
                 
                 # 4. Measure Power & Throughput
-                monitor = None
+                # (Notice we removed 'monitor = None' from here!)
                 if device == "cuda":
                     monitor = PowerMonitor()
                     monitor.start()
                 
                 start_time = time.time()
                 iterations = 0
-                while time.time() - start_time < 2.0:
+                while time.time() - start_time < burn_duration:
                     model_obj.invoke()
                     sync_device(device)
                     iterations += 1
@@ -192,15 +202,14 @@ def run_unified_stats(device):
                 else:
                     avg_power, peak_power = 0.0, 0.0
                     
-                throughput = iterations / 2.0 
+                throughput = iterations / float(burn_duration)
                 
-            # Calculate Energy Efficiency (Only if we have power readings)
+            # Calculate Energy Efficiency
             gflops_per_watt = 0.0
             if tflops > 0 and avg_power > 0:
                 tflops_per_sec = tflops * throughput
                 gflops_per_watt = (tflops_per_sec * 1000) / avg_power
             
-            # Update row data
             row.update({
                 "Status": "Passed",
                 "Latency_ms": round(avg_latency_ms, 2),
@@ -224,6 +233,12 @@ def run_unified_stats(device):
             error_msg = str(e).splitlines()[-1] if str(e) else "Unknown Error"
             print(f"❌ FAILED: {error_msg}")
             row["Error_Message"] = error_msg
+            
+            # --- THE CLEANUP FIX ---
+            # If the model crashed mid-burn, gracefully kill the background thread
+            if monitor:
+                monitor.stop()
+                
             if device == "cuda":
                 try: pynvml.nvmlShutdown() 
                 except: pass
@@ -252,9 +267,21 @@ if __name__ == "__main__":
         "-d", "--device", 
         type=str, 
         default="cuda", 
-        help="Target hardware backend: 'cpu', 'cuda', 'mps' (Mac), 'xpu' (Intel), etc."
+        help="Target hardware backend: 'cpu', 'cuda', 'mps', 'xpu', etc."
+    )
+    # --- NEW STRESS PARAMETERS ---
+    parser.add_argument(
+        "-b", "--batch-size", 
+        type=int, 
+        default=None, 
+        help="Force a specific batch size to increase compute load."
+    )
+    parser.add_argument(
+        "-t", "--time", 
+        type=float, 
+        default=2.0, 
+        help="Duration in seconds to run the power/throughput burn."
     )
     args = parser.parse_args()
     
-
-    run_unified_stats(args.device)
+    run_unified_stats(args.device, args.batch_size, args.time)

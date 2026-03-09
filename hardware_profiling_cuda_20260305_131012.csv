@@ -1,0 +1,5 @@
+Model,Backend,Status,Latency_ms,Throughput_passes_per_sec,Workload_TFLOPs,Avg_Power_W,Peak_Power_W,Efficiency_GFLOPs_per_W,Error_Message
+dlrm,cuda,Failed,N/A,N/A,N/A,N/A,N/A,N/A,No module named 'torchbenchmark'
+soft_actor_critic,cuda,Failed,N/A,N/A,N/A,N/A,N/A,N/A,No module named 'torchbenchmark'
+BERT_pytorch,cuda,Failed,N/A,N/A,N/A,N/A,N/A,N/A,No module named 'torchbenchmark'
+llama,cuda,Failed,N/A,N/A,N/A,N/A,N/A,N/A,No module named 'torchbenchmark'
