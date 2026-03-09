@@ -2,14 +2,26 @@ import sys
 import os
 from pathlib import Path
 
-def setup_paths():
-    # 1. Check where the script is sitting
-    script_dir = Path(__file__).resolve().parent
+def setup_paths(manual_path=None):
+    """Finds the TorchBench root directory and anchors the script to it."""
     
-    # 2. Check where YOU are standing (Current Working Directory)
-    cwd = Path.cwd()
+    # --- MANUAL OVERRIDE ---
+    if manual_path:
+        target_dir = Path(manual_path).resolve()
+        if (target_dir / "torchbenchmark").exists():
+            root_str = str(target_dir)
+            if root_str not in sys.path:
+                sys.path.insert(0, root_str)
+            os.chdir(root_str)
+            print(f"🎯 Manually anchored to: {root_str}")
+            return root_str
+        else:
+            print(f"❌ Error: Could not find 'torchbenchmark' inside the provided path:\n   {target_dir}")
+            sys.exit(1)
 
-    # We are looking for the folder that CONTAINS the 'torchbenchmark' subfolder
+    # --- AUTO-DISCOVERY FALLBACK ---
+    script_dir = Path(__file__).resolve().parent
+    cwd = Path.cwd()
     potential_roots = [script_dir, cwd, script_dir.parent]
     
     found_root = None
@@ -19,21 +31,17 @@ def setup_paths():
             break
             
     if not found_root:
-        print("❌ Error: Could not find the 'torchbenchmark' directory.")
-        print("Please run this script from inside the benchmark folder,")
-        print("or keep the script inside the benchmark folder.")
+        print("❌ Error: Could not find the 'torchbenchmark' directory automatically.")
+        print("Please use the --dir parameter to specify its location.")
         sys.exit(1)
 
-    # Inject the discovered root
     root_str = str(found_root)
     if root_str not in sys.path:
         sys.path.insert(0, root_str)
-    
-    # Move the "Current Directory" to the root so models find their /data folders
     os.chdir(root_str)
+    print(f"🏠 Auto-anchored to: {root_str}")
     return root_str
 
-BENCHMARK_ROOT = setup_paths()
 print(f"🏠 Anchored to: {BENCHMARK_ROOT}")
 
 import time
@@ -263,25 +271,14 @@ def run_unified_stats(device, batch_size=None, burn_duration=2.0):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run TorchBench MIMD models on a specific hardware backend.")
-    parser.add_argument(
-        "-d", "--device", 
-        type=str, 
-        default="cuda", 
-        help="Target hardware backend: 'cpu', 'cuda', 'mps', 'xpu', etc."
-    )
-    # --- NEW STRESS PARAMETERS ---
-    parser.add_argument(
-        "-b", "--batch-size", 
-        type=int, 
-        default=None, 
-        help="Force a specific batch size to increase compute load."
-    )
-    parser.add_argument(
-        "-t", "--time", 
-        type=float, 
-        default=2.0, 
-        help="Duration in seconds to run the power/throughput burn."
-    )
+    parser.add_argument("-d", "--device", type=str, default="cuda", help="Target hardware backend: 'cpu', 'cuda', etc.")
+    parser.add_argument("-b", "--batch-size", type=int, default=None, help="Force a specific batch size.")
+    parser.add_argument("-t", "--time", type=float, default=2.0, help="Duration in seconds to run the power/throughput burn.")
+    parser.add_argument("--dir", type=str, default=None, help="Manual path to the root benchmark directory (e.g., C:/github/benchmark)")
+    
     args = parser.parse_args()
+    
+    # Anchor the paths using the terminal argument (if provided) BEFORE running stats
+    setup_paths(args.dir)
     
     run_unified_stats(args.device, args.batch_size, args.time)
