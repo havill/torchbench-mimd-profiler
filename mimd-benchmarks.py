@@ -155,10 +155,25 @@ def run_unified_stats(device, batch_size=None, burn_duration=2.0):
             # 1. Initialize the TorchBench model
             module = importlib.import_module(f"torchbenchmark.models.{model_name}")
             kwargs = {"device": device, "test": "eval"}
-            if batch_size is not None:
-                kwargs["batch_size"] = batch_size
             
-            model_obj = module.Model(**kwargs)
+            try:
+                # Attempt to load with the custom batch size
+                if batch_size is not None:
+                    kwargs["batch_size"] = batch_size
+                model_obj = module.Model(**kwargs)
+                
+            except Exception as init_err:
+                # If TorchBench complains about the batch size, fall back to the default
+                if batch_size is not None and "batch size" in str(init_err).lower():
+                    print(f"\n   ⚠️ WARNING: {model_name} rejects custom batch sizes. Falling back to default.")
+                    kwargs.pop("batch_size", None) # Remove the offending parameter
+                    model_obj = module.Model(**kwargs)
+                    
+                    # Update the CSV row so you know this run didn't actually use the custom size
+                    row["Batch_Size"] = "Default (Fallback)"
+                else:
+                    # If it failed for some other reason (like missing weights), raise the error normally
+                    raise init_err
             
             with torch.no_grad():
                 # 2. Measure Workload (FLOPs)
