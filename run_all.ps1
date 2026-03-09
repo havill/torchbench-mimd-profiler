@@ -2,7 +2,7 @@
 $devices = @("cpu", "cuda")
 $batch_sizes = @(1, 8, 16, 32)
 $burn_time = 10.0
-$script_name = "mimd-benchmark.py"
+$script_name = "mimd-benchmarks.py"
 
 # --- NEW: Set your manual TorchBench path here, or leave as "" for auto-discovery ---
 $BENCHMARK_DIR = "" # Example: "C:\Users\havil\github.com\benchmark"
