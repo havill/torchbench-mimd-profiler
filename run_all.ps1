@@ -2,26 +2,30 @@
 
 # --- 1. LISTEN FOR TERMINAL ARGUMENTS ---
 param (
-    [string]$Dir = ""
+    [string]$Dir = "",
+    [string]$Devices = "cpu,cuda" # Default to both if not specified
 )
 
-$devices = @("cpu", "cuda")
+# Convert the comma-separated string into an array
+$device_array = $Devices -split ","
 $batch_sizes = @(1, 8, 16, 32)
 $burn_time = 10.0
-$script_name = "mimd-benchmarks.py" # (Ensured the 's' is here!)
+$script_name = "mimd-benchmarks.py"
 
 Write-Host "==================================================" -ForegroundColor Cyan
 Write-Host "🚀 STARTING AUTOMATED BENCHMARK SUITE" -ForegroundColor Cyan
 Write-Host "==================================================" -ForegroundColor Cyan
 
-foreach ($dev in $devices) {
+foreach ($dev in $device_array) {
+    # Trim whitespace just in case you typed "cpu, cuda" instead of "cpu,cuda"
+    $dev = $dev.Trim() 
+    
     foreach ($bs in $batch_sizes) {
         Write-Host "`n>>> Starting Run: Device = $dev | Batch Size = $bs | Time = ${burn_time}s" -ForegroundColor Yellow
         
         # --- 2. BUILD THE COMMAND SAFELY ---
         $pyArgs = @("-d", $dev, "-b", $bs, "-t", $burn_time)
         
-        # If you passed a -Dir argument, append it to the Python command
         if (![string]::IsNullOrWhiteSpace($Dir)) {
             $pyArgs += "--dir"
             $pyArgs += $Dir
