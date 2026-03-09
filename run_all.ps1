@@ -1,11 +1,14 @@
 # run_all.ps1
+
+# --- 1. LISTEN FOR TERMINAL ARGUMENTS ---
+param (
+    [string]$Dir = ""
+)
+
 $devices = @("cpu", "cuda")
 $batch_sizes = @(1, 8, 16, 32)
 $burn_time = 10.0
-$script_name = "mimd-benchmarks.py"
-
-# --- NEW: Set your manual TorchBench path here, or leave as "" for auto-discovery ---
-$BENCHMARK_DIR = "" # Example: "C:\Users\havil\github.com\benchmark"
+$script_name = "mimd-benchmarks.py" # (Ensured the 's' is here!)
 
 Write-Host "==================================================" -ForegroundColor Cyan
 Write-Host "🚀 STARTING AUTOMATED BENCHMARK SUITE" -ForegroundColor Cyan
@@ -15,17 +18,19 @@ foreach ($dev in $devices) {
     foreach ($bs in $batch_sizes) {
         Write-Host "`n>>> Starting Run: Device = $dev | Batch Size = $bs | Time = ${burn_time}s" -ForegroundColor Yellow
         
-        # Build the command arguments safely
+        # --- 2. BUILD THE COMMAND SAFELY ---
         $pyArgs = @("-d", $dev, "-b", $bs, "-t", $burn_time)
-        if (![string]::IsNullOrWhiteSpace($BENCHMARK_DIR)) {
+        
+        # If you passed a -Dir argument, append it to the Python command
+        if (![string]::IsNullOrWhiteSpace($Dir)) {
             $pyArgs += "--dir"
-            $pyArgs += $BENCHMARK_DIR
+            $pyArgs += $Dir
         }
         
-        # Execute the python script with the arguments array
+        # --- 3. EXECUTE ---
         & python $script_name @pyArgs
         
-        # Optional: Sleep for 5 seconds between heavy GPU runs to let thermals reset
+        # Optional: Sleep for 5 seconds between heavy GPU runs
         if ($dev -eq "cuda") {
             Write-Host "Cooling down for 5 seconds..." -ForegroundColor DarkGray
             Start-Sleep -Seconds 5
