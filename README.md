@@ -1,93 +1,93 @@
-# MIMD Hardware Profiling Suite for TorchBench
+# MIMD Biased Hardware Profiling Suite
 
-This suite provides a unified hardware profiling tool for evaluating PyTorch models on diverse backends (CPU, CUDA, MPS, etc.). It measures Latency, Throughput, Workload (TeraFLOPs), and Power Consumption (Watts), exporting the final results to a timestamped CSV.
+A fully automated, hardware-agnostic profiling pipeline designed to evaluate PyTorch models across different architectures (CPU, CUDA, MPS, etc.). It measures **Latency**, **Throughput**, **Workload (TeraFLOPs)**, and **Energy Efficiency (GFLOPs/Watt)**, and automatically generates comparative visualizations.
+
+## 📂 Repository Structure
+
+| File | Description |
+| :--- | :--- |
+| `mimd-benchmark.py` | The core Python profiling engine. Features dynamic path anchoring, fault tolerance, and async power telemetry. |
+| `run_all.ps1` | Windows PowerShell script to automate batch size sweeps across CPU and GPU backends. |
+| `run_all.sh` | Linux/macOS Bash equivalent for automated batch testing. |
+| `merge_csvs.py` | Utility to consolidate individual run outputs into a single `master_benchmark_results.csv`. |
+| `generate_charts.py` | Ingests the master CSV and generates presentation-ready PNG bar charts using Pandas/Seaborn. |
+
+---
 
 ## 🛠️ Environment Setup
-Tested on:
-- 11th Gen Intel i7-1165G7 @ 2.80Ghz / 16GB RAM
-  - Windows 11
-    - Python 3.13.1
-  - Fedora 42 (remix for WSL 2)
-    - Python 3.13.12
-- NVIDIA RTX 3060
-  - Driver Version: 566.36
-    - CUDA Version: 12.7
 
-1. Core Prerequisites
-First, ensure you have a clean Python 3.10+ environment and the latest build tools:
+Tested on **Windows 11** with an **NVIDIA RTX 3070 Super** (CUDA 12.6).
 
+### 1. Core Prerequisites & Graphing Libraries
+Ensure you have a clean Python 3.10+ environment:
 ```powershell
 python -m pip install --upgrade pip setuptools wheel
-pip install pywin32 pandas pyyaml ninja psutil
+pip install pywin32 pandas pyyaml ninja psutil matplotlib seaborn
 ```
 > [!NOTE]
-> pywin32 only needed for Windows
+> pywin32 not needed for Linux
 
-2. PyTorch Installation (CUDA 12.6+)
-We used the CUDA 12.6 nightly/stable builds to ensure compatibility with modern hardware:
-
+### 2. PyTorch & Telemetry Installation
 ```powershell
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
+pip install torch torchvision torchaudio --index-url [https://download.pytorch.org/whl/cu126](https://download.pytorch.org/whl/cu126)
+pip install nvidia-ml-py fvcore
 ```
-3. TorchBench Framework
-Clone the torchbenchmark repository, install the core requirements, and install the benchmark in editable mode:
 
+### 3. TorchBench Framework Setup
+Clone the official repository and install the specific MIMD-focused workloads:
 ```powershell
-gh repo clone pytorch/benchmark # assuming the GitHub CLI
+git clone [https://github.com/pytorch/benchmark](https://github.com/pytorch/benchmark)
 cd benchmark
-
-# From the root of the benchmark directory
 pip install -r requirements.txt
 pip install -e .
-```
-4. Model-Specific Dependencies
-The script targets a specific "MIMD-friendly" subset of models. Install their individual requirements using the TorchBench internal installer:
-
-```powershell
-# Installs dependencies for the core suite
 python install.py --models dlrm soft_actor_critic bert_pytorch llama
-
-# Optional: Telemetry & Helper libraries
-pip install nvidia-ml-py  # For GPU Power monitoring
-pip install fvcore        # For FLOP counting
 ```
 
-## 🚀 Running the Benchmarks
-The script supports dynamic device selection via the -d flag.
-- `-d cpu`: No special hardware libs used
-- `-d cuda`: NVIDIA
-- `-d mps`: Mac
-- `-d xpu`: Intel
+> [!NOTE]
+> The scripts feature a "Smart Path Anchor." You do not need to run them from inside the `torchbenchmark` folder. They will auto-discover the benchmark engine or can be pointed to it manually.
 
-GPU Benchmarking (Full Telemetry)
-Includes Power (Watts) and Energy Efficiency (GFLOPs/W) metrics:
+---
 
+## 🚀 The Automated Pipeline
+
+You can run the entire suite in three simple steps.
+
+### Step 1: Execute the Batch Sweep
+Open `run_all.ps1` (or `run_all.sh`) in a text editor. If your script is located outside the TorchBench directory, set the `$BENCHMARK_DIR` variable at the top of the file:
 ```powershell
-python mimd_benchmarks.py -d cuda
+$BENCHMARK_DIR = "C:\path\to\your\benchmark"
 ```
-CPU Benchmarking
-Runs the suite on the host processor (Power telemetry is automatically disabled):
-
+Run the script to begin the automated CPU and GPU tests across multiple batch sizes:
 ```powershell
-python mimd_benchmarks.py -d cpu
+PS > .\run_all.ps1
 ```
-> [!IMPORTANT]
-> The python script needs to be run in the same directory as the `torchbenchmark` directory, and that directory should contain the `models` and the `canary_models` directories inside of it.
 
-## 📊 Output
-Upon completion, the script generates a timestamped CSV file:
-hardware_profiling_[device]_[timestamp].csv
+### Step 2: Merge the Data
+Once the sweep is complete, consolidate the scattered CSV files:
+```powershell
+PS > python merge_csvs.py
+```
+*Output: `master_benchmark_results.csv`*
 
-Tracked Metrics:
-| Metric | Description |
-| :--- | :--- |
-| Latency | Average GPU/CPU time per forward pass (ms). |
-| Throughput | Inferences per second (iter/sec). |
-| Workload | Total mathematical operations in TeraFLOPs. |
-| Avg Power | Sustained power draw in Watts (NVIDIA only). |
-| Efficiency | Mathematical "Bang for your Buck" (GFLOPs per Watt). |
+### Step 3: Generate Visualizations
+Turn your raw data into professional charts for analysis:
+```powershell
+PS > python generate_charts.py
+```
+*Output: `chart_throughput_comparison.png` and `chart_energy_efficiency.png`*
 
-## ⚠️ Troubleshooting Notes
-Tacotron2 / Speech Transformer: These models were excluded from the final suite due to complex Linux-specific dependencies (kaldiio, train_chars.txt) that are unstable on Windows.
+---
 
-AssertionErrors: If you see "unknown args" errors, ensure you are not passing unsupported flags like --flops or -b to the base run.py as these are now handled natively by the Python wrapper.
+## 📊 Tracked Metrics
+
+* **Latency (ms):** Average time per forward pass.
+* **Throughput (passes/sec):** Absolute inference speed under sustained load.
+* **Workload (TFLOPs):** Total mathematical operations required by the model.
+* **Power (Watts):** Sustained and peak power draw (NVIDIA NVML required).
+* **Efficiency (GFLOPs/W):** Computational yield per unit of power consumed.
+
+---
+
+> [!TIP]
+> **Customizing Stress Tests:** You can bypass the automation scripts and run the core profiler manually for specific torture tests. Example (CUDA, Batch Size 64, 120-second burn):
+> `python mimd-benchmark.py -d cuda -b 64 -t 120`
