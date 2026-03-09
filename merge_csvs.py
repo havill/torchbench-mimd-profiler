@@ -1,12 +1,17 @@
 import glob
 import csv
 import os
+import argparse
 
-def merge_results():
+def merge_results(target_dir="."):
     print("--- 📊 Benchmark Data Merger ---")
     
-    # 1. Look for all CSVs that match our script's naming convention
-    file_pattern = "hardware_profiling_*.csv"
+    # Resolve the target directory to an absolute path for cleaner output
+    target_dir = os.path.abspath(target_dir)
+    print(f"📂 Scanning directory: {target_dir}")
+    
+    # 1. Look for all CSVs that match our naming convention in the target directory
+    file_pattern = os.path.join(target_dir, "hardware_profiling_*.csv")
     csv_files = glob.glob(file_pattern)
     
     if not csv_files:
@@ -15,7 +20,7 @@ def merge_results():
 
     print(f"🔍 Found {len(csv_files)} result files. Merging...")
     
-    master_filename = "master_benchmark_results.csv"
+    master_filename = os.path.join(target_dir, "master_benchmark_results.csv")
     total_rows = 0
     
     # 2. Open our new master file to write into
@@ -43,7 +48,16 @@ def merge_results():
                     total_rows += 1
                     
     print(f"✅ Successfully merged {total_rows} benchmark runs into:")
-    print(f"   📁 {os.path.abspath(master_filename)}\n")
+    print(f"   📁 {master_filename}\n")
 
 if __name__ == "__main__":
-    merge_results()
+    parser = argparse.ArgumentParser(description="Merge TorchBench profiling CSVs into a master file.")
+    parser.add_argument(
+        "-d", "--dir", 
+        type=str, 
+        default=".", 
+        help="Directory containing the CSV files to merge (defaults to current directory)."
+    )
+    args = parser.parse_args()
+    
+    merge_results(args.dir)
