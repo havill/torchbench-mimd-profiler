@@ -1,39 +1,40 @@
-# MIMD vs. SIMD Hardware Profiling Suite
+# MIMD ハードウェアプロファイリングスイート
 
-A fully automated, hardware-agnostic profiling pipeline designed to evaluate PyTorch models across different architectures (CPU, CUDA, MPS, etc.). It measures **Latency**, **Throughput**, **Workload (TeraFLOPs)**, and **Energy Efficiency (GFLOPs/Watt)**, and automatically generates comparative visualizations.
+ハードウェアに依存しない、完全に自動化されたプロファイリングパイプライン。異なるアーキテクチャ（CPU、CUDA、MPS など）上で PyTorch モデルを評価するために設計されています。**レイテンシ**、**スループット**、**ワークロード (テラフロップス)**、**エネルギー効率 (GFLOPS/ワット)** を測定し、比較用の可視化を自動的に生成します。
 
-## 📂 Repository Structure
+## 📂 リポジトリ構造
 
-| File | Description |
+| ファイル | 説明 |
 | :--- | :--- |
-| `mimd-benchmark.py` | The core Python profiling engine. Features dynamic path anchoring, fault tolerance, and async power telemetry. |
-| `run_all.sh` | Linux/macOS Bash script to automate batch size sweeps across CPU and GPU backends. |
-| `run_all.ps1` | Windows PowerShell equivalent for local testing. |
-| `merge_csvs.py` | Utility to consolidate individual run outputs into a single `master_benchmark_results.csv`. |
-| `generate_charts.py` | Ingests the master CSV and generates presentation-ready PNG bar charts using Pandas/Seaborn. |
+| `mimd-benchmark.py` | Python のコアプロファイリングエンジン。動的パスアンカー、フォールトトレランス、非同期電力テレメトリ機能を備えています。 |
+| `run_all.sh` | CPU および GPU バックエンド全体でバッチサイズのスイープを自動化する Linux/macOS Bash スクリプト。 |
+| `run_all.ps1` |ローカルテスト用の Windows PowerShell 相当のツールです。|
+| `merge_csvs.py` | 個々の実行出力を単一の `master_benchmark_results.csv` に統合するユーティリティです。|
+| `generate_charts.py` | マスター CSV を取り込み、Pandas/Seaborn を使用してプレゼンテーション用の PNG 棒グラフを生成します。|
 
 ---
 
-## 🛠️ Environment Setup
+## 🛠️ 環境設定
 
-Tested on **Ubuntu 22.04 LTS** and generic (remix) **Fedora 42** with an **NVIDIA RTX 3070 Super** and a **A100** (CUDA 12.6).
+**Ubuntu 22.04 LTS** および汎用（リミックス）**Fedora 42** で、**NVIDIA RTX 3070 Super** と **A100** (CUDA 12.6) を搭載してテスト済みです。
 
-### 1. Core Prerequisites & Graphing Libraries
-Ensure you have a clean Python 3.10+ environment. (We recommend using a `venv` or Conda environment):
+### 1. コアの前提条件とグラフ作成ライブラリ
+クリーンな Python 3.10 以降の環境があることを確認してください。 (`venv` または Conda 環境の使用を推奨します):
 ```bash
 python3 -m pip install --upgrade pip setuptools wheel
 pip install pandas pyyaml ninja psutil matplotlib seaborn
 ```
+ウィンドウズでは、`pywin32` もインストールする必要かもしれません。
 
-### 2. PyTorch & Telemetry Installation
-Install the PyTorch stack optimized for your CUDA version, along with the hardware telemetry libraries:
+### 2. PyTorch とテレメトリのインストール
+CUDA バージョンに合わせて最適化された PyTorch スタックとハードウェアテレメトリライブラリをインストールします:
 ```bash
 pip install torch torchvision torchaudio --index-url [https://download.pytorch.org/whl/cu126](https://download.pytorch.org/whl/cu126)
 pip install nvidia-ml-py fvcore
 ```
 
-### 3. TorchBench Framework Setup
-Clone the official repository and install the specific MIMD-focused workloads:
+### 3. TorchBench フレームワークのセットアップ
+公式リポジトリをクローンし、MIMD に特化したワークロードをインストールします:
 ```bash
 git clone [https://github.com/pytorch/benchmark](https://github.com/pytorch/benchmark)
 cd benchmark
@@ -43,52 +44,51 @@ python3 install.py --models dlrm soft_actor_critic bert_pytorch llama
 ```
 
 > [!NOTE]
-> The scripts feature a "Smart Path Anchor." You do not need to run them from inside the `torchbenchmark` folder. They will auto-discover the benchmark engine or can be pointed to it manually.
+> これらのスクリプトには「スマートパスアンカー」機能が搭載されています。`torchbenchmark` フォルダ内から実行する必要はありません。スクリプトはベンチマークエンジンを自動検出するか、手動で指定することもできます。
 
 ---
 
-## 🚀 The Automated Pipeline
+## 🚀 自動化パイプライン
 
-You can run the entire suite in three simple steps.
+スイート全体を 3 つの簡単なステップで実行できます。
 
-### Step 1: Execute the Batch Sweep
-Open `run_all.sh` in a text editor (like `nano` or `vim`). If your script is located outside the TorchBench directory, set the `--dir` argument at the command line:
+### ステップ 1: バッチスイープを実行する
+テキストエディタ (`nano` や `vim` など) で `run_all.sh` を開きます。スクリプトが TorchBench ディレクトリ外にある場合は、コマンドラインで `--dir` 引数を設定してください。
 ```bash
-$ python mimd-benchmark.py --dir /home/user/github/benchmark
+$ python3 mimd-benchmark.py --dir /home/user/github/benchmark
 ```
-Make the script executable and run it to begin the automated CPU and GPU tests across multiple batch sizes:
+スクリプトを実行可能にして実行すると、複数のバッチサイズにわたる自動 CPU および GPU テストが開始されます。
 ```bash
-$ chmod +x run_all.sh$ ./run_all.sh
+$ chmod +x run_all.sh
+$ ./run_all.sh
 ```
 
-### Step 2: Merge the Data
-Once the sweep is complete, consolidate the scattered CSV files:
+### ステップ 2: データのマージ
+スイープが完了したら、散在している CSV ファイルを統合します。
 ```bash
 $ python3 merge_csvs.py
 ```
-*Output: `master_benchmark_results.csv`*
+*出力: `master_benchmark_results.csv`*
 
-### Step 3: Generate Visualizations
-Turn your raw data into professional charts for analysis:
+### ステップ 3: 視覚化を生成する
+生データを分析用のプロフェッショナルなチャートに変換します。
 ```bash
 $ python3 generate_charts.py
 ```
-*Output: `chart_throughput_comparison.png` and `chart_energy_efficiency.png`*
-
-
+*出力: `chart_throughput_comparison.png` と `chart_energy_efficiency.png`*
 
 ---
 
-## 📊 Tracked Metrics
+## 📊 追跡対象メトリクス
 
-* **Latency (ms):** Average time per forward pass.
-* **Throughput (passes/sec):** Absolute inference speed under sustained load.
-* **Workload (TFLOPs):** Total mathematical operations required by the model.
-* **Power (Watts):** Sustained and peak power draw (NVIDIA NVML required).
-* **Efficiency (GFLOPs/W):** Computational yield per unit of power consumed.
+* **レイテンシ (ms):** フォワードパスあたりの平均時間。
+* **スループット (パス/秒):** 持続負荷下での推論速度の絶対値。
+* **ワークロード (TFLOP):** モデルに必要な合計演算量。
+* **電力 (ワット):** 持続およびピーク時の消費電力 (NVIDIA NVML が必要)。
+* **効率 (GFLOP/W):** 消費電力あたりの計算収率。
 
 ---
 
 > [!TIP]
-> **Customizing Stress Tests:** You can bypass the automation scripts and run the core profiler manually for specific torture tests. Example (CUDA, Batch Size 64, 120-second burn):
+> **ストレステストのカスタマイズ:** 自動化スクリプトをバイパスし、特定の負荷テストに対してコアプロファイラーを手動で実行できます。例 (CUDA、バッチサイズ 64、120 秒の書き込み):
 > `$ python3 mimd-benchmark.py -d cuda -b 64 -t 120`
