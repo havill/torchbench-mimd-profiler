@@ -36,7 +36,7 @@ pip install nvidia-ml-py fvcore
 ### 3. TorchBench フレームワークのセットアップ
 公式リポジトリをクローンし、MIMD に特化したワークロードをインストールします:
 ```bash
-git clone [https://github.com/pytorch/benchmark]
+git clone https://github.com/pytorch/benchmark
 cd benchmark
 pip install -r requirements.txt
 pip install -e .
