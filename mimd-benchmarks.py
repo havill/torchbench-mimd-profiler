@@ -157,99 +157,128 @@ def run_unified_stats(device, batch_size=None, burn_duration=2.0):
             kwargs = {"device": device, "test": "eval"}
             
             try:
-                # Attempt to load with the custom batch size
-                if batch_size is not None:
-                    kwargs["batch_size"] = batch_size
-                model_obj = module.Model(**kwargs)
+                # Use PyTorch's device context manager ---
+                with torch.device(device):
+                    if batch_size is not None:
+                        kwargs["batch_size"] = batch_size
+                    model_obj = module.Model(**kwargs)
                 
             except Exception as init_err:
                 # If TorchBench complains about the batch size, fall back to the default
                 if batch_size is not None and "batch size" in str(init_err).lower():
                     print(f"\n   ⚠️ WARNING: {model_name} rejects custom batch sizes. Falling back to default.")
-                    kwargs.pop("batch_size", None) # Remove the offending parameter
-                    model_obj = module.Model(**kwargs)
-                    
-                    # Update the CSV row so you know this run didn't actually use the custom size
+                    kwargs.pop("batch_size", None)
+
+                    with torch.device(device):
+                        model_obj = module.Model(**kwargs)
+
                     row["Batch_Size"] = "Default (Fallback)"
                 else:
-                    # If it failed for some other reason (like missing weights), raise the error normally
                     raise init_err
             
             with torch.no_grad():
-                # 2. Measure Workload (FLOPs)
-                tflops = 0.0
-                if HAS_FLOP_COUNTER:
-                    flop_counter = FlopCounterMode(display=False)
-                    with flop_counter:
+                monitor = None # Initialize safely outside the try block
+                
+                try:
+                    # ==========================================
+                    # 2. Measure Workload (FLOPs)
+                    # ==========================================
+                    tflops = 0.0
+                    if HAS_FLOP_COUNTER:
+                        flop_counter = FlopCounterMode(display=False)
+                        with flop_counter:
+                            model_obj.invoke()
+                        total_flops = flop_counter.get_total_flops()
+                        tflops = total_flops / 1e12  
+                    
+                    # ==========================================
+                    # 3. Measure Latency dynamically
+                    # ==========================================
+                    for _ in range(3): # Warmup
                         model_obj.invoke()
-                    total_flops = flop_counter.get_total_flops()
-                    tflops = total_flops / 1e12  
-                
-                # 3. Measure Latency dynamically
-                for _ in range(3): # Warmup
-                    model_obj.invoke()
-                sync_device(device)
-                
-                if device == "cuda":
-                    start_event = torch.cuda.Event(enable_timing=True)
-                    end_event = torch.cuda.Event(enable_timing=True)
-                    start_event.record()
-                    for _ in range(10): model_obj.invoke()
-                    end_event.record()
-                    sync_device(device) 
-                    avg_latency_ms = start_event.elapsed_time(end_event) / 10.0
-                else:
-                    t0 = time.perf_counter()
-                    for _ in range(10): model_obj.invoke()
                     sync_device(device)
-                    t1 = time.perf_counter()
-                    avg_latency_ms = ((t1 - t0) * 1000.0) / 10.0
-                
-                # 4. Measure Power & Throughput
-                # (Notice we removed 'monitor = None' from here!)
-                if device == "cuda":
-                    monitor = PowerMonitor()
-                    monitor.start()
-                
-                start_time = time.time()
-                iterations = 0
-                while time.time() - start_time < burn_duration:
-                    model_obj.invoke()
-                    sync_device(device)
-                    iterations += 1
                     
-                if device == "cuda" and monitor:
-                    avg_power, peak_power = monitor.stop()
-                else:
-                    avg_power, peak_power = 0.0, 0.0
+                    if device == "cuda":
+                        start_event = torch.cuda.Event(enable_timing=True)
+                        end_event = torch.cuda.Event(enable_timing=True)
+                        start_event.record()
+                        for _ in range(10): model_obj.invoke()
+                        end_event.record()
+                        sync_device(device) 
+                        avg_latency_ms = start_event.elapsed_time(end_event) / 10.0
+                    else:
+                        t0 = time.perf_counter()
+                        for _ in range(10): model_obj.invoke()
+                        sync_device(device)
+                        t1 = time.perf_counter()
+                        avg_latency_ms = ((t1 - t0) * 1000.0) / 10.0
                     
-                throughput = iterations / float(burn_duration)
+                    # ==========================================
+                    # 4. Measure Power & Throughput
+                    # ==========================================
+                    if device == "cuda":
+                        monitor = PowerMonitor()
+                        monitor.start()
+                    
+                    start_time = time.time()
+                    iterations = 0
+                    while time.time() - start_time < burn_duration:
+                        model_obj.invoke()
+                        sync_device(device)
+                        iterations += 1
+                        
+                    if device == "cuda" and monitor:
+                        avg_power, peak_power = monitor.stop()
+                        monitor = None # Clear monitor so 'finally' block knows it's stopped
+                    else:
+                        avg_power, peak_power = 0.0, 0.0
+                        
+                    throughput = iterations / float(burn_duration)
+                    
+                    # ==========================================
+                    # Calculate Energy Efficiency & Log Success
+                    # ==========================================
+                    gflops_per_watt = 0.0
+                    if tflops > 0 and avg_power > 0:
+                        tflops_per_sec = tflops * throughput
+                        gflops_per_watt = (tflops_per_sec * 1000) / avg_power
+                    
+                    row.update({
+                        "Status": "Passed",
+                        "Latency_ms": round(avg_latency_ms, 2),
+                        "Throughput_passes_per_sec": round(throughput, 2),
+                        "Workload_TFLOPs": round(tflops, 4) if HAS_FLOP_COUNTER else "N/A",
+                        "Avg_Power_W": round(avg_power, 2) if avg_power > 0 else "N/A",
+                        "Peak_Power_W": round(peak_power, 2) if peak_power > 0 else "N/A",
+                        "Efficiency_GFLOPs_per_W": round(gflops_per_watt, 2) if gflops_per_watt > 0 else "N/A",
+                    })
+                    
+                    print("✅ PASSED")
+                    print(f"   Latency : {row['Latency_ms']} ms | Throughput : {row['Throughput_passes_per_sec']} passes/s")
+                    if device == "cuda":
+                        print(f"   Power   : {row['Avg_Power_W']} W (Avg) / {row['Peak_Power_W']} W (Peak)")
+                    if HAS_FLOP_COUNTER:
+                        print(f"   Compute : {row['Workload_TFLOPs']} TFLOPs", end="")
+                        if device == "cuda": print(f" | Efficiency: {row['Efficiency_GFLOPs_per_W']} GFLOPs/W")
+                        else: print()
+
+                except Exception as run_err:
+                    print(f"   ❌ RUNTIME FAILED: {run_err}")
+                    row.update({
+                        "Status": "Failed",
+                        "Latency_ms": "N/A",
+                        "Throughput_passes_per_sec": "N/A",
+                        "Workload_TFLOPs": "N/A",
+                        "Avg_Power_W": "N/A",
+                        "Peak_Power_W": "N/A",
+                        "Efficiency_GFLOPs_per_W": "N/A",
+                    })
                 
-            # Calculate Energy Efficiency
-            gflops_per_watt = 0.0
-            if tflops > 0 and avg_power > 0:
-                tflops_per_sec = tflops * throughput
-                gflops_per_watt = (tflops_per_sec * 1000) / avg_power
-            
-            row.update({
-                "Status": "Passed",
-                "Latency_ms": round(avg_latency_ms, 2),
-                "Throughput_passes_per_sec": round(throughput, 2),
-                "Workload_TFLOPs": round(tflops, 4) if HAS_FLOP_COUNTER else "N/A",
-                "Avg_Power_W": round(avg_power, 2) if avg_power > 0 else "N/A",
-                "Peak_Power_W": round(peak_power, 2) if peak_power > 0 else "N/A",
-                "Efficiency_GFLOPs_per_W": round(gflops_per_watt, 2) if gflops_per_watt > 0 else "N/A",
-            })
-            
-            print("✅ PASSED")
-            print(f"   Latency : {row['Latency_ms']} ms | Throughput : {row['Throughput_passes_per_sec']} passes/s")
-            if device == "cuda":
-                print(f"   Power   : {row['Avg_Power_W']} W (Avg) / {row['Peak_Power_W']} W (Peak)")
-            if HAS_FLOP_COUNTER:
-                print(f"   Compute : {row['Workload_TFLOPs']} TFLOPs", end="")
-                if device == "cuda": print(f" | Efficiency: {row['Efficiency_GFLOPs_per_W']} GFLOPs/W")
-                else: print()
-            
+                finally:
+                    # Guarantees the background thread shuts down even if the script OOMs mid-burn
+                    if monitor is not None:
+                        monitor.stop()
+
         except Exception as e:
             error_msg = str(e).splitlines()[-1] if str(e) else "Unknown Error"
             print(f"❌ FAILED: {error_msg}")
