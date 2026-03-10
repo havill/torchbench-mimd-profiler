@@ -65,8 +65,7 @@ MIMD_MODELS = [
 #    "drq",                  # RL: Data-regularized Q-learning
     "BERT_pytorch",         # NLP: Instruction-level branching in attention mechanisms
     "llama",                # LLM: Complex decoding logic and inference-heavy branching
-#    "speech_transformer",   # Audio: Variable length sequences / complex dependencies
-#    "tacotron2",            # Sequential/Recurrent dependencies
+    "tts_angular",          # TTS: Sequential/Recurrent Dependencies
 ]
 
 # Safe import for NVML (only strictly needed if using CUDA)
