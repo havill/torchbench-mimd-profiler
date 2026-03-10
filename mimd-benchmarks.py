@@ -285,9 +285,20 @@ def run_unified_stats(device, batch_size=None, burn_duration=2.0):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run TorchBench MIMD models on a specific hardware backend.")
     parser.add_argument("-d", "--device", type=str, default="cuda", help="Target hardware backend: 'cpu', 'cuda', etc.")
-    parser.add_argument("-b", "--batch-size", type=int, default=None, help="Force a specific batch size.")
-    parser.add_argument("-t", "--time", type=float, default=2.0, help="Duration in seconds to run the power/throughput burn.")
     parser.add_argument("--dir", type=str, default=None, help="Manual path to the root benchmark directory (e.g., C:/github/benchmark)")
+    
+    parser.add_argument(
+        "-b", "--batch-size", 
+        type=int, 
+        default=None, 
+        help="Force a specific batch size. Increases computational density to saturate parallel compute units (SIMD lanes / MIMD threads)."
+    )
+    parser.add_argument(
+        "-t", "--time", 
+        type=float, 
+        default=2.0, 
+        help="Sustained burn duration in seconds. Longer times (e.g., 10-60s) capture steady-state power draw and trigger thermal throttling."
+    )
     
     args = parser.parse_args()
     
