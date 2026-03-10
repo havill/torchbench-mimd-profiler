@@ -8,9 +8,9 @@
 | :--- | :--- |
 | `mimd-benchmark.py` | Python のコアプロファイリングエンジン。動的パスアンカー、フォールトトレランス、非同期電力テレメトリ機能を備えています。 |
 | `run_all.sh` | CPU および GPU バックエンド全体でバッチサイズのスイープを自動化する Linux/macOS Bash スクリプト。 |
-| `run_all.ps1` |ローカルテスト用の Windows PowerShell 相当のツールです。|
-| `merge_csvs.py` | 個々の実行出力を単一の `master_benchmark_results.csv` に統合するユーティリティです。|
-| `generate_charts.py` | マスター CSV を取り込み、Pandas/Seaborn を使用してプレゼンテーション用の PNG 棒グラフを生成します。|
+| `run_all.ps1` | ローカルテスト用の Windows PowerShell 相当のツールです。 |
+| `merge_csvs.py` | 個々の実行出力を単一の `master_benchmark_results.csv` に統合するユーティリティです。 |
+| `generate_charts.py` | マスター CSV を取り込み、Pandas/Seaborn を使用してプレゼンテーション用の PNG 棒グラフを生成します。 |
 
 ---
 
@@ -19,22 +19,29 @@
 Python 3.13.1 の **Windows 11** 又は **Ubuntu 22.04** および汎用（リミックス）**Fedora 42** で、**NVIDIA RTX 3070 Super** と **A100** (CUDA 12.6) を搭載してテスト済みです。
 
 ### 1. コアの前提条件とグラフ作成ライブラリ
+
 クリーンな Python 3.10 以降の環境があることを確認してください。 (`venv` または Conda 環境の使用を推奨します):
+
 ```bash
 python -m pip install --upgrade pip setuptools wheel
 pip install pandas pyyaml ninja psutil matplotlib seaborn
 ```
+
 ウィンドウズでは、`pywin32` もインストールする必要があるかもしれません。
 
 ### 2. PyTorch とテレメトリのインストール
+
 CUDA バージョンに合わせて最適化された PyTorch スタックとハードウェアテレメトリライブラリをインストールします:
+
 ```bash
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
 pip install nvidia-ml-py fvcore
 ```
 
 ### 3. TorchBench フレームワークのセットアップ
+
 公式リポジトリをクローンし、MIMD に特化したワークロードをインストールします:
+
 ```bash
 git clone https://github.com/pytorch/benchmark
 cd benchmark
@@ -53,28 +60,38 @@ python install.py --models dlrm soft_actor_critic bert_pytorch llama
 スイート全体を 3 つの簡単なステップで実行できます。
 
 ### ステップ 1: バッチスイープを実行する
+
 テキストエディタ (`nano` や `vim` など) で `run_all.sh` を開きます。スクリプトが TorchBench ディレクトリ外にある場合は、コマンドラインで `--dir` 引数を設定してください。
+
 ```bash
 python mimd-benchmark.py --dir /home/user/github/benchmark
 ```
+
 スクリプトを実行可能にして実行すると、複数のバッチサイズにわたる自動 CPU および GPU テストが開始されます。
+
 ```bash
-$ chmod +x run_all.sh
-$ ./run_all.sh
+chmod +x run_all.sh
+./run_all.sh
 ```
 
 ### ステップ 2: データのマージ
+
 スイープが完了したら、散在している CSV ファイルを統合します。
+
 ```bash
 python merge_csvs.py
 ```
+
 *出力: `master_benchmark_results.csv`*
 
 ### ステップ 3: 視覚化を生成する
+
 生データを分析用のプロフェッショナルなチャートに変換します。
+
 ```bash
 python generate_charts.py
 ```
+
 *出力: `chart_throughput_comparison.png` と `chart_energy_efficiency.png`*
 
 ---
@@ -96,14 +113,15 @@ python generate_charts.py
 ## 🎛️ コマンドラインリファレンス
 
 ### 1. コアプロファイラー (`mimd-benchmarks.py`)
+
 これはメインエンジンです。非常に具体的な、単発の過酷なテストのために手動で実行できます。
 
 | 引数 | ショート | 型 | デフォルト | 説明 |
 | :--- | :---: | :--- | :--- | :--- |
 | `--device` | `-d` | 文字列 | `cuda` | ターゲットハードウェアバックエンド (例: `cpu`、`cuda`、`mps`、`xpu`)。 |
 | `--batch-size` | `-b` | Int | *なし* | 特定のバッチサイズを強制します。省略した場合は、モデルのデフォルトが使用されます。 |
-| `--time` | `-t` | Float | `2.0` |スループット/電力測定における持続バーン期間（秒）。|
-| `--dir` | ﾅｼ | 文字列 | *なし* | TorchBench リポジトリへのパスを手動で指定します。省略した場合は、パスアンカーによって自動検出されます。|
+| `--time` | `-t` | Float | `2.0` | スループット/電力測定における持続バーン期間（秒）。 |
+| `--dir` | ﾅｼ | 文字列 | *なし* | TorchBench リポジトリへのパスを手動で指定します。省略した場合は、パスアンカーによって自動検出されます。 |
 
 **例:** バッチサイズ 64 で GPU に対して 60 秒間の高負荷サーマルスロットルテストを実行します。
 `python mimd-benchmarks.py -d cuda -b 64 -t 60 --dir "/home/user/benchmark"`
@@ -122,13 +140,16 @@ python generate_charts.py
 ---
 
 ### 2. 自動化スイープ (`run_all.ps1` および `run_all.sh`)
+
 これらのラッパースクリプトは、デバイスとバッチサイズ (1、8、16、32) のマトリックスにわたってコアプロファイラーを実行します。
 
 **PowerShell (`run_all.ps1`)**
+
 * `-Devices`: テストするデバイスのカンマ区切りリスト (デフォルト: `"cpu,cuda"`)。
 * `-Dir`: TorchBench ディレクトリへのパスを手動で指定します。
 
 **Bash (`run_all.sh`)**
+
 * `-d`, `--device`: テストするデバイスのカンマ区切りリスト (デフォルト: `"cpu,cuda"`)。
 * `--dir`: TorchBench ディレクトリへのパスを手動で指定します。
 
@@ -138,6 +159,7 @@ python generate_charts.py
 ---
 
 ### 3. データマージャー (`merge_csvs.py`)
+
 複数の実行CSVファイルを1つのマスターファイルに結合します。
 
 | 引数 | ショート | 型 | デフォルト | 説明 |
@@ -150,6 +172,7 @@ python generate_charts.py
 ---
 
 ### 4. チャートジェネレーター (`generate_charts.py`)
+
 マージされたマスターCSVを読み込み、高解像度のPNGチャートを出力します。
 
 | 引数 | ショート | タイプ | デフォルト | 説明 |
