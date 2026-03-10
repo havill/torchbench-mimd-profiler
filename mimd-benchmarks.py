@@ -1,6 +1,15 @@
 import sys
 import os
 from pathlib import Path
+import time
+import threading
+import importlib
+import csv
+import argparse
+from datetime import datetime, timezone
+import torch
+
+STARTING_DIR = os.getcwd()
 
 def setup_paths(manual_path=None):
     """Finds the TorchBench root directory and anchors the script to it."""
@@ -41,14 +50,6 @@ def setup_paths(manual_path=None):
     os.chdir(root_str)
     print(f"🏠 Auto-anchored to: {root_str}")
     return root_str
-
-import time
-import threading
-import importlib
-import csv
-import argparse
-from datetime import datetime
-import torch
 
 # Gracefully check for the PyTorch FLOP counter
 try:
@@ -296,8 +297,8 @@ def run_unified_stats(device, batch_size=None, burn_duration=2.0):
         csv_data.append(row)
 
     # --- CSV EXPORT ---
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"hardware_profiling_{device}_{timestamp}.csv"
+    timestamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+    filename = os.path.join(STARTING_DIR, f"profiling-{device}-{timestamp}.csv")
     
     print("\n" + "="*50)
     print("💾 EXPORTING RESULTS")
@@ -309,7 +310,7 @@ def run_unified_stats(device, batch_size=None, burn_duration=2.0):
         writer.writeheader()
         writer.writerows(csv_data)
         
-    print(f"✅ Data successfully saved to: {os.path.abspath(filename)}\n")
+    print(f"📁 Data saved to: {os.path.abspath(filename)}\n")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run TorchBench MIMD models on a specific hardware backend.")
