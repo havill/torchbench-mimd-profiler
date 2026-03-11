@@ -5,6 +5,18 @@ import os
 import argparse
 
 def generate_charts(csv_file="000.combined-ALL.csv", filter_model=None, filter_backend=None, interactive=False, export_formats=["png"]):
+    # Supported formats for matplotlib/seaborn
+    supported_formats = {"eps", "jpeg", "jpg", "pdf", "pgf", "png", "ps", "raw", "rgba", "svg", "svgz", "tif", "tiff", "webp"}
+    filtered_formats = []
+    for fmt in export_formats:
+        if fmt.lower() in supported_formats:
+            filtered_formats.append(fmt.lower())
+        else:
+            print(f"⚠️ Format '{fmt}' is not supported. Supported formats: {', '.join(sorted(supported_formats))}")
+    if not filtered_formats:
+        print("❌ No valid export formats specified. Defaulting to 'png'.")
+        filtered_formats = ["png"]
+    export_formats = filtered_formats
     # Resolve the absolute path so we know exactly where to save the images
     csv_file = os.path.abspath(csv_file)
     out_dir = os.path.dirname(csv_file)
