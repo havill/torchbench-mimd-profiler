@@ -297,7 +297,7 @@ def run_unified_stats(device, batch_size=None, burn_duration=2.0):
 
     # --- CSV EXPORT ---
     timestamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
-    filename = os.path.join(STARTING_DIR, f"profiling-{device}-{timestamp}.csv")
+    filename = os.path.join(STARTING_DIR, f"001.profiled-{timestamp}-{device}.csv")
     
     print("\n" + "="*50)
     print("💾 EXPORTING RESULTS")

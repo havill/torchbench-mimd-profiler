@@ -1,6 +1,7 @@
 import glob
 import csv
 import os
+from datetime import datetime, timezone
 import argparse
 
 def merge_results(target_dir="."):
@@ -11,7 +12,7 @@ def merge_results(target_dir="."):
     print(f"📂 Scanning directory: {target_dir}")
     
     # 1. Look for all CSVs that match our naming convention in the target directory
-    file_pattern = os.path.join(target_dir, "hardware_profiling_*.csv")
+    file_pattern = os.path.join(target_dir, "[0-9][0-9]*.profiled-*.csv")
     csv_files = glob.glob(file_pattern)
     
     if not csv_files:
@@ -19,8 +20,9 @@ def merge_results(target_dir="."):
         return
 
     print(f"🔍 Found {len(csv_files)} result files. Merging...")
-    
-    master_filename = os.path.join(target_dir, "master_benchmark_results.csv")
+
+    timestamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+    master_filename = os.path.join(target_dir, f"000.combined-{timestamp}-ALL.csv")
     total_rows = 0
     
     # 2. Open our new master file to write into
@@ -40,8 +42,6 @@ def merge_results(target_dir="."):
                 
                 # Write the header ONLY for the very first file
                 if index == 0:
-
-                    
                     writer.writerow(headers)
                     
                 # Append all the actual data rows
@@ -63,5 +63,3 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     merge_results(args.dir)
-
-
