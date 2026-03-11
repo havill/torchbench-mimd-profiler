@@ -242,6 +242,9 @@ python generate_charts.py -f 000.combined-ALL.csv -m llama -b cuda -x png,pdf --
 | デバイス | 説明                                                                                                   |
 |:--------:|:------------------------------------------------------------------------------------------------------|
 | cpu      | 標準CPUバックエンド（ホストプロセッサ上で実行。常に利用可能）                                           |
-| cuda     | AMD ROCm (Radeon Open Compute) 又はNVIDIA CUDA (Compute Unified Device Architecture の略      |
+| cuda     | AMD ROCm (Radeon Open Compute) 又はNVIDIA CUDA (Compute Unified Device Architecture の略)              |
 | mps      | Apple Siliconバックエンド（MacのM1/M2チップ用。PyTorchのMPSサポートが必要）                             |
-| xpu      | Intel の「any Processing Unit」のoneAPIを利用（Intel製ディスクリートGPU用。PyTorchのXPUサポートが必要）           |
+| xpu      | Intel の「any Processing Unit」のoneAPIを利用（Intel製ディスクリートGPU用。PyTorchのXPUサポートが必要）   |
+| hpu      | Habana Processing Unit（Intel Gaudi AIアクセラレータ用。PyTorchのHPUサポートが必要）                    |
+| xla / openxla | XLAコンパイラ（Google TPUs用。Tensor Processing Unitにマッピング。PyTorch/XLAサポートが必要）      |
+| meta     | メモリを割り当てずに形状・型・ニューラルネットワークグラフを追跡する「仮想」デバイス（デバッグ・解析用） |
