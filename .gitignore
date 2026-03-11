@@ -1,5 +1,9 @@
 # Ignore CSV files made by the tool
 *.csv
+# Ignore image files made by the generate_charts.py
+*.png
+*.svg
+*.pdf
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
