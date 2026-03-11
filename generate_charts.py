@@ -164,8 +164,6 @@ def generate_charts(csv_file="000.combined-ALL.csv", filter_model=None, filter_b
 
     print("\n🎉 All charts generated successfully!")
 
-    print("\n🎉 All charts generated successfully!")
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate charts from a master benchmark CSV.")
     parser.add_argument(
