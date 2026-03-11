@@ -1,13 +1,14 @@
 import sys
 import os
-from pathlib import Path
 import time
 import threading
 import importlib
 import csv
 import argparse
-from datetime import datetime, timezone
 import torch
+
+from datetime import datetime, timezone
+from pathlib import Path
 
 STARTING_DIR = os.getcwd()
 
@@ -22,7 +23,7 @@ def setup_paths(manual_path=None):
             if root_str not in sys.path:
                 sys.path.insert(0, root_str)
             os.chdir(root_str)
-            print(f"🎯 Manually anchored to: {root_str}")
+            print(f"⚓ Manually anchored to: {root_str}")
             return root_str
         else:
             print(f"❌ Error: Could not find 'torchbenchmark' inside the provided path:\n   {target_dir}")
@@ -59,7 +60,7 @@ except ImportError:
     HAS_FLOP_COUNTER = False
 
 # Selected models that stress MIMD features (branching, sparse access, task parallelism)
-MIMD_MODELS = [
+DEFAULT_MIMD_MODELS = [
     "dlrm",                 # Sparse + Dense hybrid (high memory-bandwidth & irregular access)
     "soft_actor_critic",    # RL: Irregular control flow and actor-critic logic
 #    "drq",                  # RL: Data-regularized Q-learning
@@ -124,7 +125,6 @@ def sync_device(device):
 
 
 def run_unified_stats(device, batch_size=None, burn_duration=2.0):
-    print(f"--- Running MIMD Suite on {device.upper()} ---")
     print(f"--- Burn Duration: {burn_duration}s | Batch Size: {batch_size or 'Default'} ---")
     
     csv_data = []
@@ -313,9 +313,20 @@ def run_unified_stats(device, batch_size=None, burn_duration=2.0):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run TorchBench MIMD models on a specific hardware backend.")
-    parser.add_argument("-d", "--device", type=str, default="cuda", help="Target hardware backend: 'cpu', 'cuda', etc.")
     parser.add_argument("--dir", type=str, default=None, help="Manual path to the root benchmark directory (e.g., C:/github/benchmark)")
-    
+
+    parser.add_argument(
+        "-d", "--device", 
+        type=str, 
+        default="cpu",
+        help=f"Device to test. Overrides the default: 'cpu'. Note: CUDA is required for power measurements and FLOP counting."
+    )    
+    parser.add_argument(
+        "--models", 
+        nargs="+", 
+        default=DEFAULT_MIMD_MODELS,
+        help=f"Space-separated list of models to run. Overrides the default: {DEFAULT_MIMD_MODELS}."
+    )
     parser.add_argument(
         "-b", "--batch-size", 
         type=int, 
@@ -326,12 +337,20 @@ if __name__ == "__main__":
         "-t", "--time", 
         type=float, 
         default=2.0, 
-        help="Sustained burn duration in seconds. Longer times (e.g., 10-60s) capture steady-state power draw and trigger thermal throttling."
+        help="Sustained burn duration in seconds. Longer times (e.g., 10-60s) capture steady-state power draw and trigger thermal throttling. Default is 2s"
     )
     
     args = parser.parse_args()
-    
+    MIMD_MODELS = args.models
+
+    print(f"🎯 Target Device: {args.device.upper()}")
     # Anchor the paths using the terminal argument (if provided) BEFORE running stats
     setup_paths(args.dir)
-    
+    print("📊 Models queued for benchmarking:")
+    for model in MIMD_MODELS:
+        print(f" 🔹{model}")
+
+    print(f"")  #newline after displaying meta info re config
+
+    # let's goooooo
     run_unified_stats(args.device, args.batch_size, args.time)

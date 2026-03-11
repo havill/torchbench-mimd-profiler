@@ -122,6 +122,7 @@ python generate_charts.py
 | `--batch-size` | `-b` | Int | *なし* | 特定のバッチサイズを強制します。省略した場合は、モデルのデフォルトが使用されます。 |
 | `--time` | `-t` | Float | `2.0` | スループット/電力測定における持続バーン期間（秒）。 |
 | `--dir` | ﾅｼ | 文字列 | *なし* | TorchBench リポジトリへのパスを手動で指定します。省略した場合は、パスアンカーによって自動検出されます。 |
+| `--models` | ﾅｼ | リスト | デフォルトモデル群 | スペース区切りでモデル名を指定し、ベンチマーク対象をカスタマイズできます（例: `--models dlrm llama tts_angular`）。 |
 
 **例:** バッチサイズ 64 で GPU に対して 60 秒間の高負荷サーマルスロットルテストを実行します。
 `python mimd-benchmarks.py -d cuda -b 64 -t 60 --dir "/home/user/benchmark"`
