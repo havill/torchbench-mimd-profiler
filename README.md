@@ -197,33 +197,36 @@ python generate_charts.py
 | `-x, --export-formats` | 出力ファイル形式（例: `png,pdf,svg`。複数指定可。対応形式のみ保存）                |
 
 #### 対応出力フォーマット
-- PNG (`.png`)
-- PDF (`.pdf`)
-- SVG (`.svg`)
-- JPEG (`.jpg`), EPS (`.eps`), TIFF (`.tiff`), WEBP (`.webp`) など
-- インタラクティブHTML（`--interactive`指定時のみ）
+
+* PNG (`.png`)
+
+* PDF (`.pdf`)
+* SVG (`.svg`)
+* JPEG (`.jpg`), EPS (`.eps`), TIFF (`.tiff`), WEBP (`.webp`) など
+* インタラクティブHTML（`--interactive`指定時のみ）
 
 ※ GIFなど未対応形式を指定すると警告が表示され、対応形式のみ保存されます。
 
 #### 生成されるチャート一覧
 
 1. **スループット比較チャート**
-    - バッチサイズ・モデル・バックエンドごとのスループット（Passes/sec）を棒グラフで表示
-    - 各バーに数値ラベル（summary stats）付き
+    * バッチサイズ・モデル・バックエンドごとのスループット（Passes/sec）を棒グラフで表示
+    * 各バーに数値ラベル（summary stats）付き
 2. **エネルギー効率チャート（CUDAのみ）**
-    - モデル・バッチサイズごとのGFLOPs/Wattを棒グラフで表示
-    - 数値ラベル付き
+    * モデル・バッチサイズごとのGFLOPs/Wattを棒グラフで表示
+    * 数値ラベル付き
 3. **レイテンシ分布チャート**
-    - バッチサイズ・バックエンドごとのレイテンシ（ms）を箱ひげ図で表示
-    - 平均値アノテーション付き
+    * バッチサイズ・バックエンドごとのレイテンシ（ms）を箱ひげ図で表示
+    * 平均値アノテーション付き
 4. **エラー率チャート**
-    - モデル・バックエンドごとの失敗回数を棒グラフで表示
+    * モデル・バックエンドごとの失敗回数を棒グラフで表示
 5. **インタラクティブチャート**
-    - PlotlyによるHTML形式のスループットチャート（`--interactive`指定時）
+    * PlotlyによるHTML形式のスループットチャート（`--interactive`指定時）
 
 ---
 
 ##### 実行例
+
 ```bash
 python generate_charts.py -f 000.combined-ALL.csv -m llama -b cuda -x png,pdf --interactive
 ```
@@ -236,22 +239,9 @@ python generate_charts.py -f 000.combined-ALL.csv -m llama -b cuda -x png,pdf --
 
 `mimd-benchmarks.py` の `--device` パラメータはプロファイリング対象のハードウェアバックエンドを指定します。以下の値がサポートされています：
 
-| デバイス    | 説明                                                                                   |
-|:----------- |:--------------------------------------------------------------------------------------|
-| `cpu`       | 標準CPUバックエンド（ホストプロセッサ上で実行。常に利用可能）                        |
-| `cuda`      | NVIDIA GPUバックエンド（CUDA対応GPUとPyTorch CUDA版が必要）                            |
-| `mps`       | Apple Siliconバックエンド（MacのM1/M2チップ用。PyTorchのMPSサポートが必要）            |
-| `xpu`       | Intel GPUバックエンド（Intel製ディスクリートGPU用。PyTorchのXPUサポートが必要）        |
-
-- **cpu**: デフォルトの同期実行。明示的な同期処理は不要。
-- **cuda**: NVIDIA GPUで実行。電力テレメトリやFLOPカウントに対応。
-- **mps**: Apple Silicon（Mac）用。GPUアクセラレーションが有効。
-- **xpu**: IntelディスクリートGPU用。対応環境でハードウェアアクセラレーションが有効。
-
-> デバイスは `-d` または `--device` 引数で指定できます：
->
-> ```bash
-> python mimd-benchmarks.py --device cuda
-> ```
-
-デバイスが利用できない場合やPyTorch環境でサポートされていない場合、スクリプトはフォールバックまたはエラーを返します。
+| デバイス | 説明                                                                                                   |
+|:--------:|:------------------------------------------------------------------------------------------------------|
+| cpu      | 標準CPUバックエンド（ホストプロセッサ上で実行。常に利用可能）                                           |
+| cuda     | AMD ROCm (Radeon Open Compute) 又はNVIDIA CUDA (Compute Unified Device Architecture の略      |
+| mps      | Apple Siliconバックエンド（MacのM1/M2チップ用。PyTorchのMPSサポートが必要）                             |
+| xpu      | Intel の「any Processing Unit」のoneAPIを利用（Intel製ディスクリートGPU用。PyTorchのXPUサポートが必要）           |
